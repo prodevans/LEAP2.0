@@ -1,0 +1,106 @@
+Prerequisites:
+Install and setup Ansible
+
+Install boto (version>=2.24.0)
+---------------------------------------------------------------------------------------------------------------------------------------
+
+Below steps are followed:
+
+Get the ec2.ini and ec2.py file.(are available in the same repository, return to a step back)
+
+Make sure the ec2.py you are using should have --profile option . Use the latest ec2.py and boto with version>=2.24.0
+
+Make the script executable by command chmod +x ec2.py
+
+Configure the file ec2.ini file to work for particular region as shown below. this would decrease the execution time as the search for the resource would get limited to a particular region.
+
+Change ansible configuration file, ansible.cfg, to point to ec2.py as a host file
+
+[defaults]
+remote_user = root
+host_key_checking = False
+inventory = ./inventory/ec2.py
+Plabook
+
+First, define some default variable in a file all.yml in group_vars directory
+mkdir group_vars
+vi group_vars.all.yml
+
+Add the following variables
+
+---
+# group_vars/all.yml
+ 
+image: ami-7243e611
+subnet: subnet-417fff25
+region: ap-southeast-1
+zone: ap-southeast-1a # zone that the master AMI will be configured in
+keypair: mykey
+security_groups: sample_subnet
+instance_type: t2.micro
+
+volumes:
+  - device_name: /dev/xvda
+    device_type: gp2
+    volume_size: 8 # size of the root disk
+    delete_on_termination: true
+creating a role to launch an ec2 instance
+-------------------------------------------------------------------------------------------------------------------------------------
+mkdir -p roles/launch/tasks
+vi roles/launch/tasks/main.yml
+
+
+# roles/launch/tasks/main.yml
+
+- name: Launch new instance
+  ec2:
+    region: "{{ region }}"
+    vpc_subnet_id: "{{ subnet }}"
+    keypair: "{{ keypair }}"
+    zone: "{{ zone }}"
+    group: "{{ security_groups }}"
+    image: "{{ image }}"
+    instance_type: "{{ instance_type }}"
+    instance_tags:
+      Name: "{{ name }}"
+    volumes: "{{ volumes }}"
+    wait: yes
+    assign_public_ip: yes
+  register: ec2
+ 
+- name: Add new instances to host group
+  add_host:
+    name: "{{ item.public_dns_name }}"
+    groups: "{{ name }}"
+    ec2_id: "{{ item.id }}"
+  with_items: "{{ ec2.instances }}"
+
+- name: Wait for instance to boot
+  wait_for:
+    host: "{{ item.public_dns_name }}"
+    port: 22
+    delay: 30
+    timeout: 300
+    state: started
+  with_items: "{{ ec2.instances }}"
+  
+-------------------------------------------------------------------------------------------------------------------------------------
+vi launch_instance.yml
+
+---
+# launch_instance.yml
+  - hosts: localhost
+    connection: local
+    gather_facts: no
+    roles:
+      - role: launch
+        name: "{{ group_name }}-role-name"
+Run the playbook launch_instance.yml using the following command
+
+ansible-playbook -i hosts -e group_name=example launch_instance.yml -vvv
+
+This will launch the instance and you can also verify if the resources in the list of dynamic inventory got updated or not by running the following command
+
+./ec2.py --list --profile personal --refresh-cache
+
+ 
