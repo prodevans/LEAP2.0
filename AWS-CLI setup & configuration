@@ -1,0 +1,55 @@
+Before writing the playbook and if you wish to automate something in AWS using Ansible, you have to install AWS-CLI and configure AWS. Below are the steps for same.
+
+$ curl -O https://bootstrap.pypa.io/get-pip.py
+
+$ python get-pip.py --user
+
+1.Use the curl command to download the installation script. The following command uses the -O (uppercase "O") parameter to specify that the downloaded file is to be stored in the current folder using the same name it has on the remote host.
+
+
+$ curl -O https://bootstrap.pypa.io/get-pip.py
+Or
+
+$ sudo yum install epel-release
+
+$ sudo yum install python-pip
+
+$ pip --version
+
+Run the script with Python to download and install the latest version of pip and other required support packages.
+
+$ python get-pip.py –user
+
+Or
+
+python3 get-pip.py –user (When you include the --user switch, the script installs pip to the path ~/.local/bin.) 
+
+Ensure the folder that contains pip is part of your PATH variable.
+
+Now you can test to verify that pip is installed correctly.
+
+$ pip3 --version
+
+Use pip to install the AWS CLI.
+
+$ pip3 install awscli --upgrade –user
+
+When you use the --user switch, pip installs the AWS CLI to ~/.local/bin. Verify that the AWS CLI installed correctly.
+
+$ aws –version
+
+Upgrading to the Latest Version of the AWS CLI version 1
+
+$ pip3 install --upgrade --user awscli
+
+Configuring AWS
+
+$ aws configure     # Provide aws_security_key and aws_access_key to configure
+
+$ pip install boto --user    # you require boto package to create instances, security groups, VPN creations and many more
+
+Installing Ansible
+
+$ yum install epel-release
+
+$ yum install ansible
