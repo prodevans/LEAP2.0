@@ -1,0 +1,62 @@
+---
+ - name: Create an ec2 instance
+   hosts: localhost
+   gather_facts: False
+   vars:
+     keypair: firstkeypair
+     instance_type: t2.micro
+     image: ami-0520e698dd500b1d1
+     region: us-east-2
+   tasks:
+     - name: Launch instance
+       ec2:
+          key_name: "{{ keypair }}"
+          group: default
+          instance_type: "{{ instance_type }}"
+          image: "{{ image }}"
+          group_id: sg-02cc301b47969c1b5
+          wait: yes
+          wait_timeout: 60
+          region: "{{ region }}"
+          aws_access_key: AKIA3ZCCWQALJSK2AT5H
+          aws_secret_key: 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
+       register: ec2
+
+     - name: Add instance to the inventory
+       add_host:
+          name: "{{ item.public_ip }}"
+          group: ec2_instance
+       with_items: "{{ ec2.instances }}"
+
+     - name: wait for ssh to start
+       wait_for:
+         host: "{{ item.public_ip }}"
+         port: 22
+
+         timeout: 180
+         state: started
+       with_items: "{{ ec2.instances }}"
+------------------------------------------------------------------------------------------------------------------------------------
+
+- name: harden server
+  hosts: ec2_instances
+  become: yes
+  become_method: sudo
+  remote_user: ec2-user
+  tasks:
+   - name: copy ssh config
+     copy:
+       src: /etc/sh/shd_config
+       dest: /etc/ssh/sshd_config
+       mode: '0644'
+       owner: root
+       group: wheel
+       backup: yes
+- name: installing firewall 
+  yum:
+     name: firewall
+     state: installed
+- name: starting the service
+  service:
+      name: firewalld
+      state: started
