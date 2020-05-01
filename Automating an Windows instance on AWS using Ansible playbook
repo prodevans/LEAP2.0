@@ -1,0 +1,35 @@
+---
+- hosts: localhost
+  connection: local
+  tasks:
+    - name: Create/Check if security group exists for applications
+      ec2_group:
+        name: #give your security_group name
+        description: #give its description
+        vpc_id: vpc-5c569f37
+        aws_access_key: #your access_key here
+        aws_secret_key: #your secret_key here
+        region: us-east-2
+        rules:
+        - proto: tcp
+          from_port: 80
+          to_port: 80
+          cidr_ip: 0.0.0.0/0
+        - proto: tcp
+          from_port: 5986
+          to_port: 5986
+          cidr_ip: 0.0.0.0/0
+        - proto: tcp
+          from_port: 3389
+          to_port: 3389
+          cidr_ip: 0.0.0.0/0
+      register: security_group
+    - name: Create ec2 application instances
+      ec2:
+        instance_type: t1.micro
+        aws_access_key: #your access_key her
+        aws_secret_key: #your secret_key here
+        region: us-east-1
+        group: # group name
+        image: ami-# image of your choice
+      register: ec2_result
